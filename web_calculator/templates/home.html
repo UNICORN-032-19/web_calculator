@@ -1,11 +1,91 @@
 <!DOCTYPE html>
 <html>
-   <head>
-      <meta charset="utf-8" />
-      <title>Shepilov Vladislav</title>
-   </head>
-   <body>
-       <b>Hello World !</b>
-       <p>{{ timestamp }}</p>
-   </body>
+    <head>
+        <meta charset="utf-8" />
+        <title>Shepilov Vladislav</title>
+    </head>
+    <body>
+        <style type="text/css" scoped>
+        .calc-btn {
+            height:79px;
+            width:115px;
+        }
+        #main-input {
+            disable: true;
+        }
+        </style>
+        <script type="text/javascript">
+            function insertParam(key, value)
+            {
+                key = encodeURI(key); value = encodeURI(value);
+
+                var kvp = document.location.search.substr(1).split('&');
+                var new_kvp = [];
+
+                var i=kvp.length; var x; while(i--) 
+                {
+                    x = kvp[i].split('=');
+
+                    if (x[0]==key)
+                    {
+                        if (value === "+") {
+                            value = "plus";
+                        } else if (value === "=") {
+                            value = "equal";
+                        }
+                        x[1] = x[1] + value;
+                        // kvp[i] = x.join('=');
+                        new_kvp[0] = x.join('=');
+                        break;
+                    }
+                }
+
+                if(i<0) {new_kvp[new_kvp.length] = [key,value].join('=');}
+
+                //this will reload the page, it's likely better to store this until finished
+                document.location.search = new_kvp.join('&'); 
+            }
+            function click_btn(event) {
+                var symbol = event.target.textContent;
+                insertParam("string", symbol);
+            };
+        </script>
+           {% if to_error %}
+              <h2 style="color: red;">{{ to_error }}</h2>
+           {% else %}
+               <input type="text" size="50" value="{{ string }}">
+           {% endif %}
+        <table>
+            <tr><td>
+                <button class="calc-btn" onclick="click_btn(event);">C</button>
+                <button class="calc-btn" onclick="click_btn(event);">DEL</button>
+                <button class="calc-btn" onclick="click_btn(event);">*</button>
+                <button class="calc-btn" onclick="click_btn(event);">=</button>
+            </td></tr>
+            <tr><td>
+                <button class="calc-btn" onclick="click_btn(event);">1</button>
+                <button class="calc-btn" onclick="click_btn(event);">2</button>
+                <button class="calc-btn" onclick="click_btn(event);">3</button>
+                <button class="calc-btn" onclick="click_btn(event);">/</button>
+            </td></tr>
+            <tr><td>
+                <button class="calc-btn" onclick="click_btn(event);">4</button>
+                <button class="calc-btn" onclick="click_btn(event);">5</button>
+                <button class="calc-btn" onclick="click_btn(event);">6</button>
+                <button class="calc-btn" onclick="click_btn(event);">+</button>
+            </td></tr>
+            <tr><td>
+                <button class="calc-btn" onclick="click_btn(event);">7</button>
+                <button class="calc-btn" onclick="click_btn(event);">8</button>
+                <button class="calc-btn" onclick="click_btn(event);">9</button>
+                <button class="calc-btn" onclick="click_btn(event);">-</button>
+            </td></tr>
+            <tr><td>
+                <button class="calc-btn" onclick="click_btn(event);">(</button>
+                <button class="calc-btn" onclick="click_btn(event);">0</button>
+                <button class="calc-btn" onclick="click_btn(event);">)</button>
+                <button class="calc-btn" onclick="click_btn(event);">X^2</button>
+            </td></tr>
+        </table>
+    </body>
 </html>
