@@ -13,78 +13,137 @@
         #main-input {
             disable: true;
         }
+        .loader {
+          border: 16px solid #f3f3f3; /* Light grey */
+          border-top: 16px solid #3498db; /* Blue */
+          border-radius: 50%;
+          width: 120px;
+          height: 120px;
+          animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
         </style>
+        <script
+              src="https://code.jquery.com/jquery-3.4.1.min.js"
+              integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+              crossorigin="anonymous"></script>
         <script type="text/javascript">
-            function insertParam(key, value)
-            {
-                key = encodeURI(key); value = encodeURI(value);
+            var calculate_string = "";
+            function get_scrf_token() {
+                var csrfmiddlewaretoken = document.getElementsByName("csrfmiddlewaretoken")[0].value;
+                return csrfmiddlewaretoken;
+            }
+            function compute() {
+                var form = new FormData();
+                form.append("string", calculate_string);
+                form.append("csrfmiddlewaretoken", get_scrf_token());
 
-                var kvp = document.location.search.substr(1).split('&');
-                var new_kvp = [];
-
-                var i=kvp.length; var x; while(i--) 
-                {
-                    x = kvp[i].split('=');
-
-                    if (x[0]==key)
-                    {
-                        if (value === "+") {
-                            value = "plus";
-                        } else if (value === "=") {
-                            value = "equal";
-                        }
-                        x[1] = x[1] + value;
-                        // kvp[i] = x.join('=');
-                        new_kvp[0] = x.join('=');
-                        break;
-                    }
+                var settings = {
+                  "async": true,
+                  "crossDomain": true,
+                  "url": "http://127.0.0.1:8000/compute",
+                  "method": "POST",
+                  "headers": {
+                    "cache-control": "no-cache",
+                  },
+                  "processData": false,
+                  "contentType": false,
+                  "mimeType": "multipart/form-data",
+                  "data": form
                 }
 
-                if(i<0) {new_kvp[new_kvp.length] = [key,value].join('=');}
-
-                //this will reload the page, it's likely better to store this until finished
-                document.location.search = new_kvp.join('&'); 
+                return $.ajax(settings);
+                
+            }
+            function empty_error() {
+                $('h3#error').html("");
             }
             function click_btn(event) {
+                empty_error();
                 var symbol = event.target.textContent;
-                insertParam("string", symbol);
+                if (symbol === "C" || symbol === "DEL") {
+                    if (symbol === "C") {
+                        calculate_string = "";
+                        $('input#maininput').val("0");
+                    } else if (symbol === "DEL") {
+                        calculate_string = calculate_string.substring(0, calculate_string.length - 1);
+                        if (!calculate_string) {
+                            $('input#maininput').val("0");
+                        } else {
+                            $('input#maininput').val(calculate_string);
+                        }
+                    } else {}
+                } else {
+                    calculate_string = calculate_string + symbol;
+                    if (symbol === "=" || symbol === "X^2") {
+                        $('div.loader').show();
+                        compute().done(function (response) {
+                            $('div.loader').hide();
+                            string = JSON.parse(response)["string"];
+                            error = JSON.parse(response)["error"];
+                            if (error) {
+                                $('h3#error').html(error);
+                                calculate_string = "";
+                                $('input#maininput').val("0");
+                            } else {
+                                $('input#maininput').val(string);
+                                calculate_string = string;
+                            }
+                        });
+                    } else {
+                        $('input#maininput').val(calculate_string);
+                    }
+                }
             };
+            $( document ).ready(function() {
+                $('div.loader').hide();
+                calculate_string = "";
+                $('input#maininput').val("0");
+                $(".calc-btn").on('click', function(event){
+                    event.stopPropagation();
+                    event.stopImmediatePropagation();
+                    click_btn(event);
+                });
+            });
         </script>
-           {% if to_error %}
-              <h2 style="color: red;">{{ to_error }}</h2>
-           {% else %}
-               <input type="text" size="50" value="{{ string }}">
-           {% endif %}
+        {% csrf_token %}
+        <input type="text" size="50" value="0" id="maininput"/>
+        <h3 style="color: red;" id="error"></h3>
+        <div class="loader"></div> 
         <table>
             <tr><td>
-                <button class="calc-btn" onclick="click_btn(event);">C</button>
-                <button class="calc-btn" onclick="click_btn(event);">DEL</button>
-                <button class="calc-btn" onclick="click_btn(event);">*</button>
-                <button class="calc-btn" onclick="click_btn(event);">=</button>
+                <button class="calc-btn">C</button>
+                <button class="calc-btn">DEL</button>
+                <button class="calc-btn">*</button>
+                <button class="calc-btn">=</button>
             </td></tr>
             <tr><td>
-                <button class="calc-btn" onclick="click_btn(event);">1</button>
-                <button class="calc-btn" onclick="click_btn(event);">2</button>
-                <button class="calc-btn" onclick="click_btn(event);">3</button>
-                <button class="calc-btn" onclick="click_btn(event);">/</button>
+                <button class="calc-btn">1</button>
+                <button class="calc-btn">2</button>
+                <button class="calc-btn">3</button>
+                <button class="calc-btn">/</button>
             </td></tr>
             <tr><td>
-                <button class="calc-btn" onclick="click_btn(event);">4</button>
-                <button class="calc-btn" onclick="click_btn(event);">5</button>
-                <button class="calc-btn" onclick="click_btn(event);">6</button>
-                <button class="calc-btn" onclick="click_btn(event);">+</button>
+                <button class="calc-btn">4</button>
+                <button class="calc-btn">5</button>
+                <button class="calc-btn">6</button>
+                <button class="calc-btn">+</button>
             </td></tr>
             <tr><td>
-                <button class="calc-btn" onclick="click_btn(event);">7</button>
-                <button class="calc-btn" onclick="click_btn(event);">8</button>
-                <button class="calc-btn" onclick="click_btn(event);">9</button>
-                <button class="calc-btn" onclick="click_btn(event);">-</button>
+                <button class="calc-btn">7</button>
+                <button class="calc-btn">8</button>
+                <button class="calc-btn">9</button>
+                <button class="calc-btn">-</button>
             </td></tr>
             <tr><td>
-                <button class="calc-btn" onclick="click_btn(event);">(</button>
-                <button class="calc-btn" onclick="click_btn(event);">0</button>
-                <button class="calc-btn" onclick="click_btn(event);">)</button>
-                <button class="calc-btn" onclick="click_btn(event);">X^2</button>
+                <button class="calc-btn">(</button>
+                <button class="calc-btn">0</button>
+                <button class="calc-btn">)</button>
+                <button class="calc-btn">X^2</button>
             </td></tr>
         </table>
     </body>

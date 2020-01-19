@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Results</title>
+    </head>
+    <body>
+{% for result in results %}
+            <p>{{ result.string }} = {{ result.result }}</p>
+            <p>error: {{ result.error }}</p>
+{% endfor %}
+    </body>
+</html>

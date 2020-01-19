@@ -1,6 +1,9 @@
 from django.shortcuts import render, redirect
+from django.http import HttpResponse
 from datetime import datetime
 from .calculator.calc import Calculator, UnknownOperation, UnknownError
+import json
+from web_calculator.common.models import Result
 
 calc = Calculator(start_auto=False)
 
@@ -20,23 +23,22 @@ def get_result(string):
     return str(result), str(error)
 
 def home(request):
-    string = request.GET.get("string", "").strip()
-    to_error = request.GET.get("error", "").strip()
-    string = string.replace("plus", "+")
-    if string.endswith("equal"):
-        string = string.replace("equal", "")
+    return render(request, 'home.html')
+
+def compute(request):
+    return_result = dict(
+        string="0",
+        error="",
+    )
+    string = request.POST.get("string", "").strip()
+    if string.endswith("="):
+        string = string.replace("=", "")
         result, error = get_result(string)
         if error:
-            return redirect(request.path + "?" + "error=" + error)
+            return_result.update({"error": error})
         else:
-            return redirect(request.path + "?" + "string=" + result)
-    if string.endswith("C"):
-        return redirect(request.path + "?" + "string=0")
-    if string.endswith("DEL"):
-        return redirect(request.path + "?" + "string=" + string[:-4])
-    if string.startswith("0"):
-        return redirect(request.path + "?" + "string=" + string[1:])
-    if string.endswith("X^2"):
+            return_result.update({"string": result})
+    elif string.endswith("X^2"):
         string = string[:-3]
         error = ""
         try:
@@ -51,14 +53,14 @@ def home(request):
             result, error = get_result(result1 + "^2")
             if error:
                raise ValueError(error)
-            return redirect(request.path + "?" + "string=" + result)
+            return_result.update({"string": result})
         except ValueError as error:
-            return redirect(request.path + "?" + "error=" + error)
+            return_result.update({"error": error})
+    else:
+        return_result.update({"string": string})
+    Result.objects.create(string=string, result=return_result.get("string"), error=return_result.get("error"))
+    return HttpResponse(json.dumps(return_result), content_type="text/json")
 
-    if not string:
-        string = "0"
-    context = {'timestamp': datetime.utcnow().strftime("%d/%m/%Y %H:%M:%S"), 'string': string, 'to_error': to_error}
-    return render(request, 'home.html', context)
-
-def compute(request):
-    pass
+def results(request):
+    results = Result.objects.all()
+    return render(request, 'results.html', context={"results": results})
